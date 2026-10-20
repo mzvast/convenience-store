@@ -41,6 +41,15 @@ function thumbnail(product) {
   return thumbnails.get(product.id);
 }
 
+/** Reflect wheel and preset changes in the same visible, accessible camera panel. */
+function updateCameraControls(state) {
+  for (const button of document.querySelectorAll('#camera-controls [data-view]')) button.setAttribute('aria-pressed', button.dataset.view === state.view);
+  $('zoom-value').textContent = `${Math.round(state.zoom * 100)}%`;
+  $('zoom-out').disabled = state.zoom <= .55001;
+  $('zoom-in').disabled = state.zoom >= 2.79999;
+  $('world').closest('.play-area').dataset.view = state.view;
+}
+
 /** Keep all displayed prices and physical shelf visibility derived from one model. */
 function render() {
   const state = shop.getState();
@@ -165,6 +174,7 @@ async function start() {
         $('near-hint').querySelector('span').textContent = product ? `拿起 ${product.name}` : '拿起商品';
       },
       /** Keep the map location grounded in the shopper's actual coordinates. */ onLocation(name) { $('location').textContent = name; },
+      /** Keep the camera panel synchronized with every zoom input. */ onCameraChange: updateCameraControls,
     });
     render();
     $('add-button').addEventListener('click', addHeld);
@@ -174,11 +184,10 @@ async function start() {
       if (world.goCheckout()) toast('这边请，小麦在收银台等你。');
       else toast('先把手中的商品放好，再去结账。');
     });
-    $('view-button').addEventListener('click', () => {
-      const following = world.toggleView();
-      $('view-button').setAttribute('aria-pressed', following);
-      toast(following ? '角色跟随视角 · 右键拖动可环顾四周' : '小店全景视角');
-    });
+    for (const button of document.querySelectorAll('#camera-controls [data-view]')) button.addEventListener('click', () => world.setView(button.dataset.view));
+    $('zoom-in').addEventListener('click', () => world.zoomBy(1.2));
+    $('zoom-out').addEventListener('click', () => world.zoomBy(1 / 1.2));
+    $('reset-view').addEventListener('click', () => world.resetView());
     $('sound-button').addEventListener('click', async () => {
       try {
         if (!audioContext) audioContext = new AudioContext();

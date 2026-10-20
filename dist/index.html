@@ -15,7 +15,6 @@
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
     <symbol id="i-sound" viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5V4Zm5 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
-    <symbol id="i-view" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9"/></symbol>
     <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5m0 3h.01"/></symbol>
     <symbol id="i-location" viewBox="0 0 24 24"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
@@ -28,7 +27,12 @@
   <main class="app-layout">
     <section class="play-area" aria-label="便利店三维场景">
       <div class="scene-heading"><div class="eyebrow"><span></span> YOUR LITTLE EVERYDAY ADVENTURE</div><h1>生活的小确幸，<br>从<span>逛一逛</span>开始。</h1><p>一间小店，装满好东西。今天想带点什么回家？</p></div>
-      <div class="scene-tools"><span class="scene-status"><i></i> 自由探索</span><button class="tool" id="view-button" aria-label="切换跟随视角" title="切换跟随视角"><svg><use href="#i-view"/></svg></button><button class="tool" id="sound-button" aria-label="打开音效" title="打开音效" aria-pressed="false"><svg><use href="#i-sound"/></svg><span class="sound-slash"></span></button></div>
+      <div class="scene-tools"><span class="scene-status"><i></i> 自由探索</span><button class="tool" id="sound-button" aria-label="打开音效" title="打开音效" aria-pressed="false"><svg><use href="#i-sound"/></svg><span class="sound-slash"></span></button></div>
+      <div class="camera-controls" id="camera-controls" role="group" aria-label="镜头控制">
+        <div class="camera-presets" role="group" aria-label="视角切换"><button data-view="overview" aria-pressed="true">全景</button><button data-view="top" aria-pressed="false">俯视</button><button data-view="follow" aria-pressed="false">角色跟随</button></div>
+        <div class="camera-zoom"><button id="zoom-out" aria-label="缩小" title="缩小">−</button><span id="zoom-value" aria-label="当前缩放">100%</span><button id="zoom-in" aria-label="放大" title="放大">+</button><span></span><button id="reset-view" title="恢复当前视角的默认角度与缩放">重置</button></div>
+        <span class="camera-tip">拖动旋转与俯仰 · 滚轮缩放</span>
+      </div>
       <canvas id="world" tabindex="0" aria-label="三维便利店。使用 W A S D 或方向键移动，E 拿取附近商品。"></canvas>
       <div id="loading" class="loading"><span class="loading-spinner"></span><b>小店正在开门</b><span>把日常，装进一点惊喜。</span></div>
       <div class="store-caption"><span>EST. 2026</span><span class="caption-line"></span><span>A LITTLE STORE. A LOT TO EXPLORE.</span></div>
@@ -52,7 +56,7 @@
     </aside>
   </main>
   <footer class="site-footer"><span>把日子过成喜欢的样子。</span><span>EXPLORE · PICK · ENJOY <span class="footer-dot">●</span> LITTLE MART</span><span>一间永远为你亮灯的小店 <span class="sun">☼</span></span></footer>
-  <dialog id="help-dialog"><button class="dialog-close" data-close="help-dialog" aria-label="关闭指南"><svg><use href="#i-close"/></svg></button><span class="eyebrow">MAKE YOURSELF AT HOME</span><h2>欢迎来到小小便利店</h2><p>用一点空闲，换一袋好心情。</p><ol><li><b>走一走</b><span>WASD / 方向键行走，或点击地面。触屏可使用左下方向键。</span></li><li><b>挑一挑</b><span>点击商品，角色会走到货架前拿起它；也可以靠近后按 E。查看包装与价格，加入购物车或按 R 放回。</span></li><li><b>结个账</b><span>带着购物车走近右前方收银台，小麦自动逐件扫描并打印小票。</span></li><li><b>换个角度</b><span>按住右键拖动旋转视角，滚轮缩放。右上方方块按钮切换角色跟随视角。</span></li></ol><button class="primary wide" data-close="help-dialog">好，去逛逛 <svg><use href="#i-arrow"/></svg></button></dialog>
+  <dialog id="help-dialog"><button class="dialog-close" data-close="help-dialog" aria-label="关闭指南"><svg><use href="#i-close"/></svg></button><span class="eyebrow">MAKE YOURSELF AT HOME</span><h2>欢迎来到小小便利店</h2><p>用一点空闲，换一袋好心情。</p><ol><li><b>走一走</b><span>WASD / 方向键行走，或点击地面。触屏可使用左下方向键。</span></li><li><b>挑一挑</b><span>点击商品，角色会走到货架前拿起它；也可以靠近后按 E。查看包装与价格，加入购物车或按 R 放回。</span></li><li><b>结个账</b><span>带着购物车走近右前方收银台，小麦自动逐件扫描并打印小票。</span></li><li><b>换个角度</b><span>通过镜头面板切换全景、俯视或角色跟随。鼠标或单指拖动调整水平角度和俯仰角；滚轮或加减按钮缩放，重置恢复当前视角。</span></li></ol><button class="primary wide" data-close="help-dialog">好，去逛逛 <svg><use href="#i-arrow"/></svg></button></dialog>
   <dialog id="receipt-dialog" class="receipt-dialog"><button class="dialog-close" data-close="receipt-dialog" aria-label="关闭小票"><svg><use href="#i-close"/></svg></button><span class="receipt-logo">m.</span><h2>LITTLE MART</h2><p class="receipt-sub">小 小 便 利 店 · 感 谢 惠 顾</p><div class="receipt-meta" id="receipt-meta"></div><div id="receipt-items"></div><div class="receipt-total"><span>实付（模拟）</span><strong id="receipt-total"></strong></div><p class="receipt-thanks">一袋小确幸，记得好好享用。<br>小麦期待与你再次见面。</p><div class="barcode"></div><button class="primary wide" id="continue-button">继续逛逛 <svg><use href="#i-arrow"/></svg></button></dialog>
   <div id="scan-overlay" class="scan-overlay" hidden><span class="scan-robot">▰</span><span class="eyebrow">XIAOMAI IS ON IT</span><h2>小麦正在为你结账</h2><p id="scan-status">请把购物车交给我吧。</p><div class="scan-track"><span id="scan-progress"></span></div></div>
   <script type="module" src="./app.js"></script>

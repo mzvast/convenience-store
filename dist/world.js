@@ -17,6 +17,8 @@ export function createWorld(canvas) {
   const geometryCache = new Map();
   const productMaps = new Map();
   const productTemplates = new Map();
+  /** Exterior pieces whose private materials can fade without changing shelves. */
+  const shellParts = [];
   const stock = [];
   const obstacles = [];
   const keys = new Set();
@@ -26,8 +28,11 @@ export function createWorld(canvas) {
   const lookTarget = new THREE.Vector3(0, .85, .4);
   const followTarget = new THREE.Vector3();
   let viewAngle = .55;
+  /** Elevation above the floor, constrained away from the vertical singularity. */
+  let viewPitch = .88;
   let zoom = 1;
-  let follow = false;
+  /** Active camera preset; manual orbit keeps its current framing mode. */
+  let viewMode = 'overview';
   let enabled = true;
   let currentState = null;
   let route = [];
@@ -39,6 +44,8 @@ export function createWorld(canvas) {
   let onCheckout = () => {};
   let onNear = () => {};
   let onLocation = () => {};
+  /** Notify visible controls when a preset or zoom value changes. */
+  let onCameraChange = () => {};
   let lastLocation = '';
   let lastNear = '';
   let elapsed = 0;
@@ -58,6 +65,23 @@ export function createWorld(canvas) {
     item.receiveShadow = true;
     parent.add(item);
     return item;
+  }
+
+  /** Give an exterior piece independent fade state, including grouped door parts. */
+  function shell(object, side) {
+    object.traverse(item => {
+      if (!item.isMesh) return;
+      item.material = item.material.clone();
+      item.material.transparent = true;
+      shellParts.push({
+        /** Mesh belonging to this exterior side. */ object: item,
+        /** Side used to decide whether the camera looks through this piece. */ side,
+        /** Original opacity, including already-transparent glass. */ opacity: item.material.opacity,
+        /** Original shadow setting restored in the exterior overview. */ castShadow: item.castShadow,
+        /** Original depth setting preserved for glass. */ depthWrite: item.material.depthWrite,
+      });
+    });
+    return object;
   }
 
   /** Reuse dimensions for the store's repeating boxes. */
@@ -306,45 +330,47 @@ export function createWorld(canvas) {
   for(let i=0;i<13;i++)box(.96,.045,1.0,'#d7d6c0',-5.76+i*.96,.065,6.4);
   rounded(2.3,.025,1.1,'#466e5a',0,.13,5.75,.03);
   const welcome=label('HELLO, NEIGHBOR.',1.9,.32,0,.148,5.75,'#dedfc7','#466e5a',scene,70);welcome.rotation.x=-Math.PI/2;
-  box(11.8,3.8,.18,cream,0,2,-4.8);
-  box(.18,3.8,10.1,cream,-5.8,2,.2);
-  box(.18,.75,10.1,cream,5.8,.51,.2);
-  for(let i=0;i<8;i++)box(.025,3.65,.026,'#c5c5af',-5.65+i*1.6,1.95,-4.69);
+  shell(box(11.8,3.8,.18,cream,0,2,-4.8),'back');
+  shell(box(.18,3.8,10.1,cream,-5.8,2,.2),'left');
+  shell(box(.18,.75,10.1,cream,5.8,.51,.2),'right');
+  for(let i=0;i<8;i++)shell(box(.025,3.65,.026,'#c5c5af',-5.65+i*1.6,1.95,-4.69),'back');
   box(11.6,.24,.23,'#a6b4a2',0,.25,-4.65);
   box(.23,.24,10,'#a6b4a2',-5.65,.25,.2);
-  rounded(12.05,.72,.48,teal,0,3.94,5.25,.14);
-  box(11.85,.22,.495,'#f5e6cc',0,3.76,5.265);
-  box(11.85,.16,.50,orange,0,3.65,5.268);
-  rounded(.45,.72,10.6,teal,-5.9,3.94,.2,.1);
-  rounded(.45,.72,10.6,teal,5.9,3.94,.2,.1);
-  rounded(12.05,.72,.45,teal,0,3.94,-4.95,.1);
-  box(11.7,.11,.5,'#e9e7d2',0,4.34,5.25);
-  label('L I T T L E  M A R T',4.3,.43,0,4.01,5.51,'#fcf4d9',teal,scene,70);
-  label('OPEN 24/7',1.25,.25,4.4,4,5.51,'#e7e9be',teal,scene,80);
-  label('m.',.6,.43,-4.5,4,5.51,'#fcf4d9',teal,scene,110);
+  shell(rounded(12.05,.72,.48,teal,0,3.94,5.25,.14),'front');
+  shell(box(11.85,.22,.495,'#f5e6cc',0,3.76,5.265),'front');
+  shell(box(11.85,.16,.50,orange,0,3.65,5.268),'front');
+  shell(rounded(.45,.72,10.6,teal,-5.9,3.94,.2,.1),'left');
+  shell(rounded(.45,.72,10.6,teal,5.9,3.94,.2,.1),'right');
+  shell(rounded(12.05,.72,.45,teal,0,3.94,-4.95,.1),'back');
+  shell(box(11.7,.11,.5,'#e9e7d2',0,4.34,5.25),'front');
+  shell(label('L I T T L E  M A R T',4.3,.43,0,4.01,5.51,'#fcf4d9',teal,scene,70),'front');
+  shell(label('OPEN 24/7',1.25,.25,4.4,4,5.51,'#e7e9be',teal,scene,80),'front');
+  shell(label('m.',.6,.43,-4.5,4,5.51,'#fcf4d9',teal,scene,110),'front');
   for(const x of [-5.72,-1.28,1.28,5.72]){
-    rounded(.16,3.27,.18,trim,x,1.98,5.2,.025);
-    box(.2,.55,.24,'#aeb5a0',x,.4,5.2);
+    shell(rounded(.16,3.27,.18,trim,x,1.98,5.2,.025),'front');
+    shell(box(.2,.55,.24,'#aeb5a0',x,.4,5.2),'front');
   }
-  box(11.5,.16,.27,trim,0,.25,5.2);
+  shell(box(11.5,.16,.27,trim,0,.25,5.2),'front');
   // A clear central doorway stays open; window glass is intentionally faint.
   const glass=new THREE.MeshPhysicalMaterial({color:'#c9e1d5',transparent:true,opacity:.12,roughness:.08,metalness:.1,depthWrite:false,side:THREE.DoubleSide});
   for(const x of [-3.5,3.5]){
     const pane=box(4.15,2.8,.035,glass,x,1.92,5.2);pane.castShadow=false;
-    box(4.2,.12,.26,teal,x,.65,5.22);
-    box(4.2,.28,.23,cream,x,.42,5.21);
-    box(4.2,.05,.16,trim,x,2.68,5.2);
+    shell(pane,'front');
+    shell(box(4.2,.12,.26,teal,x,.65,5.22),'front');
+    shell(box(4.2,.28,.23,cream,x,.42,5.21),'front');
+    shell(box(4.2,.05,.16,trim,x,2.68,5.2),'front');
   }
   const door=new THREE.Group();door.position.set(1.25,.22,5.2);door.rotation.y=-1.12;scene.add(door);
   box(1.16,3.1,.065,glass,-.59,1.55,0,door);
   for(const x of [-1.17,0])box(.055,3.1,.1,trim,x,1.55,0,door);
   for(const y of [.02,3.07])box(1.2,.06,.1,trim,-.59,y,0,door);
   cylinder(.025,.025,.55,material('#777f70',.25,.7),-1.02,1.5,.09,door);
+  shell(door,'front');
   obstacle(-3.65,5.2,4.1,.08);obstacle(3.65,5.2,4.1,.08);
   obstacle(-5.8,.2,.1,10);obstacle(5.8,.2,.1,10);obstacle(0,-4.8,11.6,.1);
   // Warm task lights under the fascia and above the refrigerated section.
   for(const x of [-4.9,-2.8,2.8,4.9]){
-    box(.42,.09,.22,glowMaterial,x,3.42,5.1);
+    shell(box(.42,.09,.22,glowMaterial,x,3.42,5.1),'front');
     const lamp=new THREE.PointLight('#ffda94',2.4,5,2);lamp.position.set(x,3.05,4.3);scene.add(lamp);
   }
   label('DAILY GOODS  /  日 常 好 物',4.6,.32,-2.5,3.35,-4.68,darkTeal,cream,scene,54);
@@ -616,11 +642,35 @@ export function createWorld(canvas) {
     walkTo(entry.approach,()=>{if(entry.group.visible)onPick(id);focus.visible=false;});
   }
 
+  /** Read the preset and bounded zoom used by both wheel and toolbar controls. */
+  function cameraState() {
+    return {
+      /** Active overview, top, or follow framing preset. */ view: viewMode,
+      /** User-visible magnification relative to the overview scale. */ zoom,
+    };
+  }
+
+  /** Apply zoom through one path so buttons and the wheel share the same limits. */
+  function setZoom(value) {
+    zoom=THREE.MathUtils.clamp(value,.55,2.8);
+    onCameraChange(cameraState());
+  }
+
+  /** Restore a useful angle, elevation and scale for the selected framing mode. */
+  function setView(mode) {
+    if(!['overview','top','follow'].includes(mode))return;
+    viewMode=mode;
+    viewAngle=mode==='top'?0:.55;
+    viewPitch=mode==='top'?1.28:mode==='follow'?.72:.88;
+    setZoom(mode==='follow'?1.8:mode==='top'?1.1:1);
+  }
+
   /** Resize the renderer and retain a useful overview on narrow screens. */
   function resize() {
     const width=canvas.clientWidth,height=canvas.clientHeight,aspect=width/height;
     renderer.setSize(width,height,false);
-    const half=aspect<.85?11.7:10.1;
+    // Fit the shop width when the cart sidebar leaves a tall, narrow canvas.
+    const half=Math.max(aspect<.85?11.7:10.1,9.8/aspect);
     camera.left=-half*aspect;camera.right=half*aspect;camera.top=half;camera.bottom=-half;
     camera.updateProjectionMatrix();
   }
@@ -633,15 +683,20 @@ export function createWorld(canvas) {
     pointerStart={
       /** Initial pointer x in screen pixels. */ x:event.clientX,
       /** Initial pointer y in screen pixels. */ y:event.clientY,
-      /** Right-button orbit gesture flag. */ orbit:event.button===2,
+      /** Right-button gestures always suppress the ground or product click. */ orbit:event.button===2,
       /** Camera angle at gesture start. */ angle:viewAngle,
+      /** Camera elevation at gesture start. */ pitch:viewPitch,
     };dragged=false;canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener('pointermove',event=>{
     if(!pointerStart)return;
     const dx=event.clientX-pointerStart.x;
-    if(Math.abs(dx)+Math.abs(event.clientY-pointerStart.y)>6)dragged=true;
-    if(pointerStart.orbit)viewAngle=pointerStart.angle-dx*.006;
+    const dy=event.clientY-pointerStart.y;
+    if(Math.abs(dx)+Math.abs(dy)>6)dragged=true;
+    if(dragged){
+      viewAngle=pointerStart.angle-dx*.006;
+      viewPitch=THREE.MathUtils.clamp(pointerStart.pitch+dy*.006,.35,1.4);
+    }
   });
   canvas.addEventListener('pointerup',event=>{
     const wasOrbit=pointerStart?.orbit;pointerStart=null;
@@ -660,7 +715,12 @@ export function createWorld(canvas) {
     const plane=new THREE.Plane(new THREE.Vector3(0,1,0),-.14),point=new THREE.Vector3();
     if(raycaster.ray.intersectPlane(plane,point)&&canWalk(point.x,point.z))walkTo(point);
   });
-  canvas.addEventListener('wheel',event=>{event.preventDefault();zoom=THREE.MathUtils.clamp(zoom-event.deltaY*.00065,.75,1.65);},{passive:false});
+  canvas.addEventListener('wheel',event=>{
+    event.preventDefault();
+    const pixels=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?canvas.clientHeight:1);
+    setZoom(zoom*Math.exp(-THREE.MathUtils.clamp(pixels,-600,600)*.0015));
+  },{passive:false});
+  canvas.addEventListener('pointercancel',()=>{pointerStart=null;});
   window.addEventListener('keydown',event=>{
     if(document.querySelector('dialog[open]')||/INPUT|TEXTAREA/.test(event.target.tagName))return;
     if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(event.key))event.preventDefault();
@@ -724,10 +784,22 @@ export function createWorld(canvas) {
       if(enabled&&!currentState.held&&currentState.quantity>0&&Math.hypot(p.x-3.6,p.z-4.17)<.85){route=[];arrival=null;onCheckout();}
     }
     const narrow=canvas.clientWidth/canvas.clientHeight<.85;
-    followTarget.set(follow?player.group.position.x*.7:0,follow ? .9 : narrow ? 3.9 : 2.0,follow?player.group.position.z*.6:.4);
+    const following=viewMode==='follow';
+    followTarget.set(following?player.group.position.x:0,following?1.0:narrow?3.9:2.0,following?player.group.position.z:.4);
     lookTarget.lerp(followTarget,dt*2.5);
-    camera.zoom=THREE.MathUtils.lerp(camera.zoom,zoom*(follow?1.4:1),dt*5);camera.updateProjectionMatrix();
-    camera.position.set(lookTarget.x+Math.sin(viewAngle)*23,lookTarget.y+17,lookTarget.z+Math.cos(viewAngle)*23);
+    camera.zoom=THREE.MathUtils.lerp(camera.zoom,zoom,dt*5);camera.updateProjectionMatrix();
+    const horizontal=28.6*Math.cos(viewPitch);
+    camera.position.set(lookTarget.x+Math.sin(viewAngle)*horizontal,lookTarget.y+28.6*Math.sin(viewPitch),lookTarget.z+Math.cos(viewAngle)*horizontal);
+    // Interior views cut away only the camera-facing exterior; collisions stay solid.
+    const interior=viewMode!=='overview'||player.group.position.z<5.05;
+    for(const part of shellParts){
+      const facing=part.side==='front'?Math.cos(viewAngle)>.15:part.side==='back'?Math.cos(viewAngle)<-.15:part.side==='right'?Math.sin(viewAngle)>.15:Math.sin(viewAngle)<-.15;
+      const faded=interior&&facing;
+      const target=part.opacity*(faded?.08:1);
+      part.object.material.opacity=THREE.MathUtils.lerp(part.object.material.opacity,target,Math.min(1,dt*8));
+      part.object.material.depthWrite=part.depthWrite&&part.object.material.opacity>.95;
+      part.object.castShadow=part.castShadow&&!faded;
+    }
     camera.lookAt(lookTarget);renderer.render(scene,camera);
   }
   renderer.setAnimationLoop(frame);
@@ -735,7 +807,7 @@ export function createWorld(canvas) {
   return {
     /** Physical stock list consumed by the shopping state model. */ stock,
     /** Subscribe UI actions without coupling the 3D renderer to DOM state. */
-    setCallbacks(callbacks){onPick=callbacks.onPick;onCheckout=callbacks.onCheckout;onNear=callbacks.onNear;onLocation=callbacks.onLocation;},
+    setCallbacks(callbacks){onPick=callbacks.onPick;onCheckout=callbacks.onCheckout;onNear=callbacks.onNear;onLocation=callbacks.onLocation;onCameraChange=callbacks.onCameraChange;onCameraChange(cameraState());},
     /** Reconcile reserved stock and attach the selected package to the shopper. */
     sync(state){
       currentState=state;
@@ -751,8 +823,12 @@ export function createWorld(canvas) {
     },
     /** Walk through navigable aisles to the cashier's automatic checkout zone. */
     goCheckout(){return walkTo(new THREE.Vector3(3.6,.14,4.17));},
-    /** Toggle close third-person follow and the wider dollhouse view. */
-    toggleView(){follow=!follow;return follow;},
+    /** Select overview, elevated top view, or close third-person follow framing. */
+    setView,
+    /** Change magnification while respecting the shared wheel/button bounds. */
+    zoomBy(factor){setZoom(zoom*factor);},
+    /** Reset orbit, elevation and scale within the currently selected preset. */
+    resetView(){setView(viewMode);},
     /** Pause movement while inspecting dialogs or scanning a purchase. */
     setEnabled(value){enabled=value;if(!value){keys.clear();route=[];arrival=null;}},
     /** Mirror virtual direction buttons into the normal movement controls. */
