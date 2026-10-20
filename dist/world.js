@@ -620,7 +620,7 @@ export function createWorld(canvas) {
   function resize() {
     const width=canvas.clientWidth,height=canvas.clientHeight,aspect=width/height;
     renderer.setSize(width,height,false);
-    const half=aspect<.85?11.7:8.55;
+    const half=aspect<.85?11.7:10.1;
     camera.left=-half*aspect;camera.right=half*aspect;camera.top=half;camera.bottom=-half;
     camera.updateProjectionMatrix();
   }
@@ -724,7 +724,7 @@ export function createWorld(canvas) {
       if(enabled&&!currentState.held&&currentState.quantity>0&&Math.hypot(p.x-3.6,p.z-4.17)<.85){route=[];arrival=null;onCheckout();}
     }
     const narrow=canvas.clientWidth/canvas.clientHeight<.85;
-    followTarget.set(follow?player.group.position.x*.7:0,follow ? .9 : narrow ? 3.4 : .85,follow?player.group.position.z*.6:.4);
+    followTarget.set(follow?player.group.position.x*.7:0,follow ? .9 : narrow ? 3.9 : 2.0,follow?player.group.position.z*.6:.4);
     lookTarget.lerp(followTarget,dt*2.5);
     camera.zoom=THREE.MathUtils.lerp(camera.zoom,zoom*(follow?1.4:1),dt*5);camera.updateProjectionMatrix();
     camera.position.set(lookTarget.x+Math.sin(viewAngle)*23,lookTarget.y+17,lookTarget.z+Math.cos(viewAngle)*23);
