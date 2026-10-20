@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f5ed">
+  <meta name="description" content="走进一间小小便利店，慢慢逛，挑点喜欢的。第三人称 3D 购物体验。">
+  <title>小小便利店 · LITTLE MART</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <svg class="icon-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 7h14l1 14H4L5 7Z M8 8V6a4 4 0 0 1 8 0v2"/></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24"><path d="m2 3 3 1 3 12h11l3-9H6 M9 20h.01M18 20h.01"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5V4Zm5 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="i-view" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5m0 3h.01"/></symbol>
+    <symbol id="i-location" viewBox="0 0 24 24"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  </svg>
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="小小便利店首页"><span class="brand-mark"><svg><use href="#i-bag"/></svg><span>m.</span></span><span class="brand-word">LITTLE MART<span>小 小 便 利 店</span></span></a>
+    <nav class="header-nav" aria-label="页面导航"><span class="active">逛逛小店 <span>01</span></span><button id="help-top">游玩指南 <svg><use href="#i-help"/></svg></button></nav>
+    <div class="header-right"><span class="open-dot"></span> 营业中 <span class="hours">24 / 7</span><span class="header-divider"></span><span class="edition">AN EVERYDAY ESCAPE</span></div>
+  </header>
+  <main class="app-layout">
+    <section class="play-area" aria-label="便利店三维场景">
+      <div class="scene-heading"><div class="eyebrow"><span></span> YOUR LITTLE EVERYDAY ADVENTURE</div><h1>生活的小确幸，<br>从<span>逛一逛</span>开始。</h1><p>一间小店，装满好东西。今天想带点什么回家？</p></div>
+      <div class="scene-tools"><span class="scene-status"><i></i> 自由探索</span><button class="tool" id="view-button" aria-label="切换跟随视角" title="切换跟随视角"><svg><use href="#i-view"/></svg></button><button class="tool" id="sound-button" aria-label="打开音效" title="打开音效" aria-pressed="false"><svg><use href="#i-sound"/></svg><span class="sound-slash"></span></button></div>
+      <canvas id="world" tabindex="0" aria-label="三维便利店。使用 W A S D 或方向键移动，E 拿取附近商品。"></canvas>
+      <div id="loading" class="loading"><span class="loading-spinner"></span><b>小店正在开门</b><span>把日常，装进一点惊喜。</span></div>
+      <div class="store-caption"><span>EST. 2026</span><span class="caption-line"></span><span>A LITTLE STORE. A LOT TO EXPLORE.</span></div>
+      <div class="floor-location"><svg><use href="#i-location"/></svg><span id="location">小店门前</span><span class="location-dot"></span><span>欢迎光临</span></div>
+      <div class="interaction-hint" id="near-hint" hidden><kbd>E</kbd><span>拿起商品</span></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <section class="product-card" id="product-card" aria-label="手中的商品" hidden>
+        <div class="product-image"><canvas id="product-preview" width="160" height="180" aria-label="旋转商品预览"></canvas><span>360°</span></div>
+        <div class="product-info"><div class="eyebrow" id="product-category"></div><h2 id="product-name"></h2><p id="product-description"></p><div class="product-price" id="product-price"></div><div class="product-actions"><button class="primary" id="add-button">放入购物车 <svg><use href="#i-cart"/></svg></button><button class="text-button" id="return-button">放回货架 <kbd>R</kbd></button></div></div>
+        <button class="card-close" id="close-product" aria-label="放回商品并关闭"><svg><use href="#i-close"/></svg></button>
+      </section>
+      <div class="touch-controls" aria-label="触屏行走"><button data-move="ArrowUp" aria-label="向前">↑</button><div><button data-move="ArrowLeft" aria-label="向左">←</button><button data-move="ArrowDown" aria-label="向后">↓</button><button data-move="ArrowRight" aria-label="向右">→</button></div></div>
+      <div class="control-strip"><div class="movement-keys"><span class="wasd"><kbd>W</kbd><span><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span></span><span>自由行走</span></div><span class="control-separator"></span><div><span class="mouse-icon"></span><span>点击地面行走 · 点击商品选购</span></div><span class="control-separator"></span><div><kbd>E</kbd><span>拿起</span><kbd>R</kbd><span>放回</span></div><button id="help-bottom" aria-label="查看游玩指南"><svg><use href="#i-help"/></svg></button></div>
+    </section>
+    <aside class="cart-panel" aria-label="购物车">
+      <div class="cart-heading"><div><span class="eyebrow">A BAG OF LITTLE JOYS</span><h2>我的购物车 <span id="cart-count">0</span></h2></div><svg><use href="#i-bag"/></svg></div>
+      <div class="cart-content" id="cart-content"><div class="empty-cart" id="empty-cart"><div class="empty-illustration"><span class="empty-circle"></span><svg><use href="#i-cart"/></svg><span class="spark s1">✦</span><span class="spark s2">+</span><span class="spark s3">·</span></div><h3>还空着呢</h3><p>去货架前转转，<br>把喜欢的好物带回来。</p><span class="empty-note">一点零食，一份好心情。</span></div><ul id="cart-items" aria-label="已选商品"></ul></div>
+      <div class="cart-summary"><div><span>商品数量</span><b id="cart-quantity">0 件</b></div><div class="total"><span>合计</span><strong><small>¥</small><span id="cart-total">0.00</span></strong></div><p>所有价格均为游戏内模拟价格</p><button id="checkout-button" class="checkout-button" disabled><span>去收银台结账</span><svg><use href="#i-arrow"/></svg></button><div class="checkout-note"><span class="tiny-robot">▰</span> 走近收银台，小机器人会为你结账。</div></div>
+      <div class="cashier-card"><span class="robot-avatar"><span class="antenna"></span><span class="robot-face"><i></i><i></i></span></span><div><b>小麦 <span>你的店员朋友</span></b><p id="robot-message">慢慢挑，我一直都在。</p></div><span class="robot-online"></span></div>
+      <div class="sidebar-footer"><span>MADE FOR SLOW MOMENTS</span><span>✳</span></div>
+    </aside>
+  </main>
+  <footer class="site-footer"><span>把日子过成喜欢的样子。</span><span>EXPLORE · PICK · ENJOY <span class="footer-dot">●</span> LITTLE MART</span><span>一间永远为你亮灯的小店 <span class="sun">☼</span></span></footer>
+  <dialog id="help-dialog"><button class="dialog-close" data-close="help-dialog" aria-label="关闭指南"><svg><use href="#i-close"/></svg></button><span class="eyebrow">MAKE YOURSELF AT HOME</span><h2>欢迎来到小小便利店</h2><p>用一点空闲，换一袋好心情。</p><ol><li><b>走一走</b><span>WASD / 方向键行走，或点击地面。触屏可使用左下方向键。</span></li><li><b>挑一挑</b><span>点击商品，角色会走到货架前拿起它；也可以靠近后按 E。查看包装与价格，加入购物车或按 R 放回。</span></li><li><b>结个账</b><span>带着购物车走近右前方收银台，小麦自动逐件扫描并打印小票。</span></li><li><b>换个角度</b><span>按住右键拖动旋转视角，滚轮缩放。右上方方块按钮切换角色跟随视角。</span></li></ol><button class="primary wide" data-close="help-dialog">好，去逛逛 <svg><use href="#i-arrow"/></svg></button></dialog>
+  <dialog id="receipt-dialog" class="receipt-dialog"><button class="dialog-close" data-close="receipt-dialog" aria-label="关闭小票"><svg><use href="#i-close"/></svg></button><span class="receipt-logo">m.</span><h2>LITTLE MART</h2><p class="receipt-sub">小 小 便 利 店 · 感 谢 惠 顾</p><div class="receipt-meta" id="receipt-meta"></div><div id="receipt-items"></div><div class="receipt-total"><span>实付（模拟）</span><strong id="receipt-total"></strong></div><p class="receipt-thanks">一袋小确幸，记得好好享用。<br>小麦期待与你再次见面。</p><div class="barcode"></div><button class="primary wide" id="continue-button">继续逛逛 <svg><use href="#i-arrow"/></svg></button></dialog>
+  <div id="scan-overlay" class="scan-overlay" hidden><span class="scan-robot">▰</span><span class="eyebrow">XIAOMAI IS ON IT</span><h2>小麦正在为你结账</h2><p id="scan-status">请把购物车交给我吧。</p><div class="scan-track"><span id="scan-progress"></span></div></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
